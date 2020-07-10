@@ -26,3 +26,7 @@
     left: 0px;
     opacity: 0.4;
 }
+
+canvas {
+    margin: 70px auto;
+}
