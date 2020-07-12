@@ -1,16 +1,16 @@
 
 window.addEventListener("load", function() {
     var Q = Quintus()
-            .include("Sprites, Scenes, Input, 2D, UI")
-            .setup("game");
+            .include("Sprites, Scenes, Input, 2D, UI, Touch")
+            .setup("game")
+            .touch();
     
     Q.input.keyboardControls({
         UP: 'player2-up',
         DOWN: 'player2-down',
         W: 'player1-up',
         S: 'player1-down',
-        ENTER: 'enter'
-    })
+    });
 
     ////////////////////////////////////////////////////////////
     //  Sprites
@@ -55,8 +55,9 @@ window.addEventListener("load", function() {
             });
 
             this.on("hit", this, "collide");
-            this.p.vx = this.p.speed;
-            //this.p.vy = this.p.speed;
+
+            if (Q.state.get("player1_score") >= Q.state.get("player2_score")) this.p.vx = this.p.speed;
+            else this.p.vx = -this.p.speed;
         },
 
         step: function(dt) {
@@ -83,12 +84,34 @@ window.addEventListener("load", function() {
             if (this.p.x < 50) {
                 Q.state.inc("player2_score", 1);
                 this.destroy();
-                Q.stageScene("court");
+
+                if (Q.state.get("player2_score") == 3) {
+                    Q.clearStage("hud");
+                    Q.stageScene("player2-win");
+                    Q.state.reset();
+                }
+                else {
+                    setTimeout(() => {
+                        Q.clearStage("court");
+                        Q.stageScene("court");
+                    }, 1000);
+                }
             }
             if (this.p.x > Q.width - 50) {
                 Q.state.inc("player1_score", 1);
                 this.destroy();
-                Q.stageScene("court");
+
+                if (Q.state.get("player1_score") == 3) {
+                    Q.clearStage("hud");
+                    Q.stageScene("player1-win");
+                    Q.state.reset();
+                }
+                else {
+                    setTimeout(() => {
+                        Q.clearStage("court");
+                        Q.stageScene("court");
+                    }, 1000);
+                }
             }
         },
 
@@ -97,7 +120,7 @@ window.addEventListener("load", function() {
                 var dy = (this.p.y - col.obj.p.y) / col.obj.p.h * 2.5;
                 if (col.normalX >= 0) {
                     this.p.vx = this.p.speed;
-                    this.p.speed += 10;
+                    this.p.speed += 20;
                 }
                 this.p.vy = dy * this.p.speed;
             } 
@@ -106,7 +129,7 @@ window.addEventListener("load", function() {
                 var dy = (this.p.y - col.obj.p.y) / col.obj.p.h * 2.5;
                 if (col.normalX <= 0) {
                     this.p.vx = -this.p.speed;
-                    this.p.speed += 10;
+                    this.p.speed += 20;
                 }
                 this.p.vy = dy * this.p.speed;
             } 
@@ -121,13 +144,6 @@ window.addEventListener("load", function() {
     // Scenes + UI
 
     Q.scene("court", function(stage) {
-        Q.state.reset({
-            player1_score: 0,
-            player2_score: 0
-        });
-
-        Q.stageScene("hud", 1);
-
         var player1 = stage.insert(new Q.Player1({
             x: 100,
             y: Q.height/2,
@@ -144,6 +160,11 @@ window.addEventListener("load", function() {
     });
 
     Q.scene("hud", function(stage) {
+        Q.state.reset({
+            player1_score: 0,
+            player2_score: 0
+        });
+
         stage.insert(new Q.Score1({
             label: "Player 1 score: 0",
             x: Q.width / 5,
@@ -154,21 +175,16 @@ window.addEventListener("load", function() {
             x: 4 * Q.width / 5,
             y: 20,
         }));
-
-        if (Q.state.get("player1_score") == 3) {
-            Q.stageScene("endGame", 1, {
-                label: "Player 1 win!"
-            });
-        }
-        else if(Q.state.get("player2_score") == 3) {
-            Q.stageScene("endGame", 1, {
-                label: "Player 2 win!"
-            });
-        }
     });
     
     Q.scene("title", function(stage) {
-        Q.clearStage(1);
+        stage.insert(new Q.UI.Text({
+            label: "Pong",
+            align: "center",
+            x: Q.width/2,
+            y: Q.height/3,
+            size: 40
+        }));
         
         stage.insert(new Q.UI.Button({
             label: "start game",
@@ -181,14 +197,15 @@ window.addEventListener("load", function() {
         },  
         function() {
             Q.stageScene("court");
+            Q.stageScene("hud", 1);
         }));
 
         stage.insert(new Q.UI.Text({
-            label: "Pong",
+            label: "Score 3 to win",
             align: "center",
             x: Q.width/2,
-            y: Q.height/3,
-            size: 40
+            y: Q.height/2 + 50,
+            size: 15
         }));
         
         stage.insert(new Q.UI.Text({
@@ -208,28 +225,46 @@ window.addEventListener("load", function() {
         }));
     });
 
-    Q.scene("endGame", function(stage) {
+    Q.scene("player1-win", function(stage) {
         stage.insert(new Q.UI.Text({
-            label: "You win!",
+            label: "Player 1 wins!",
             align: 'center',
             x: Q.width/2,
-            y: Q.height/2,
-            size: 20
+            y: Q.height/3,
+            size: 50
         }));
 
-        var container = stage.insert(new Q.UI.Container({
+        var button = stage.insert(new Q.UI.Button({
             x: Q.width/2,
             y: Q.height/2,
-            fill: "rgba(0, 0, 0, 0.5)"
+            border: 1,
+            fill: "white",
+            label: "Play Again?"
+        }, function() {
+            Q.stageScene("court");
+            Q.stageScene("hud", 1);
+        }));
+    });
+
+    Q.scene("player2-win", function(stage) {
+        stage.insert(new Q.UI.Text({
+            label: "Player 2 wins!",
+            align: 'center',
+            x: Q.width/2,
+            y: Q.height/3,
+            size: 50
         }));
 
-        var button = container.insert(new Q.UI.Button({
-            x: 0,
-            y: 0,
-            fill: "#CCCCCC",
+        var button = stage.insert(new Q.UI.Button({
+            x: Q.width/2,
+            y: Q.height/2,
+            border: 1,
+            fill: "white",
             label: "Play Again?"
+        }, function() {
+            Q.stageScene("court");
+            Q.stageScene("hud", 1);
         }));
-        container.fit(20);
     });
 
     Q.UI.Text.extend("Score1", {
@@ -245,7 +280,6 @@ window.addEventListener("load", function() {
     
         score: function(score) {
             this.p.label = "Player 1 score: " + Q.state.get("player1_score");
-            
         }
     });
 
@@ -276,4 +310,4 @@ window.addEventListener("load", function() {
             if (loaded == total) document.querySelector("#loading").remove();
         }
     });
-})
+});
