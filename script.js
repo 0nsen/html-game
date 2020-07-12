@@ -65,18 +65,18 @@ window.addEventListener("load", function() {
 
             this.stage.collide(this);
 
-            if(this.p.y < 24) { 
+            if(this.p.y < 15) { 
                 this.p.vy = Math.abs(this.p.vy); 
             }
-            if(this.p.y > Q.height - 24) { 
+            if(this.p.y > Q.height - 15) { 
                 this.p.vy = -Math.abs(this.p.vy); 
             }
             
-            // if(this.p.x > Q.width - 24) { 
+            // if(this.p.x > Q.width - 15) { 
             //     this.p.vx = -Math.abs(this.p.vx); 
             // }
 
-            // if(this.p.x < 24) { 
+            // if(this.p.x < 15) { 
             //     this.p.vx = Math.abs(this.p.vx); 
             // }
 
@@ -144,7 +144,6 @@ window.addEventListener("load", function() {
     });
 
     Q.scene("hud", function(stage) {
-    
         stage.insert(new Q.Score1({
             label: "Player 1 score: 0",
             x: Q.width / 5,
@@ -156,30 +155,57 @@ window.addEventListener("load", function() {
             y: 20,
         }));
 
-        if (Q.state.get("player1_score") == 3 || Q.state.get("player2_score") == 3) {
-            Q.stageScene("endGame");
+        if (Q.state.get("player1_score") == 3) {
+            Q.stageScene("endGame", 1, {
+                label: "Player 1 win!"
+            });
+        }
+        else if(Q.state.get("player2_score") == 3) {
+            Q.stageScene("endGame", 1, {
+                label: "Player 2 win!"
+            });
         }
     });
     
     Q.scene("title", function(stage) {
         Q.clearStage(1);
         
+        stage.insert(new Q.UI.Button({
+            label: "start game",
+            align: "center",
+            fill: "white",
+            border: 1,
+            x: Q.width / 2,
+            y: Q.height / 2,
+            size: 15
+        },  
+        function() {
+            Q.stageScene("court");
+        }));
+
         stage.insert(new Q.UI.Text({
             label: "Pong",
             align: "center",
             x: Q.width/2,
             y: Q.height/3,
-            size: 30
+            size: 40
         }));
         
         stage.insert(new Q.UI.Text({
-            label: "Start game",
+            label: "Player 1: W S",
             align: "center",
-            x: Q.width / 2,
-            y: Q.height / 2,
-            size: 20,
+            x: Q.width / 5,
+            y: 4 * Q.height / 5,
+            size: 15
         }));
 
+        stage.insert(new Q.UI.Text({
+            label: "Player 2: UP DOWN",
+            align: "center",
+            x: 4 * Q.width / 5,
+            y: 4 * Q.height / 5,
+            size: 15
+        }));
     });
 
     Q.scene("endGame", function(stage) {
@@ -243,7 +269,7 @@ window.addEventListener("load", function() {
     ////////////////////////////////////////////////////////////
 
     Q.load("Stick.png, Ball.png", function() {
-        Q.stageScene("court");
+        Q.stageScene("title");
     },  {
         progressCallback: function(loaded, total) {
             document.querySelector("#loading-progress").style.width = Math.floor(loaded/total*100) + "%";

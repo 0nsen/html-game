@@ -29,4 +29,5 @@
 
 canvas {
     margin: 70px auto;
+    border: black solid 10px;
 }
