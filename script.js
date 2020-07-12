@@ -4,45 +4,193 @@ window.addEventListener("load", function() {
             .include("Sprites, Scenes, Input, 2D, UI")
             .setup("game");
     
-    Q.Sprite.extend("Player", {
+    Q.input.keyboardControls({
+        UP: 'player2-up',
+        DOWN: 'player2-down',
+        W: 'player1-up',
+        S: 'player1-down',
+        ENTER: 'enter'
+    })
+
+    ////////////////////////////////////////////////////////////
+    //  Sprites
+
+    Q.Sprite.extend("Player1", {
         init: function(p) {
             this._super(p, {
-                asset: "Stick.png"
+                asset: "Stick.png",
+                type: Q.SPRITE_DEFAULT | Q.SPRITE_FRIENDLY,
             });
-            this.add("aiBounce");
         },
+
         step: function(dt) {
-        
+            if (Q.inputs['player1-up']) this.p.y -= 20;
+            if (Q.inputs['player1-down']) this.p.y += 20;
+        }
+    });
+
+    Q.Sprite.extend("Player2", {
+        init: function(p) {
+            this._super(p, {
+                asset: "Stick.png",
+                flip: 'x',
+                type: Q.SPRITE_DEFAULT | Q.SPRITE_FRIENDLY
+            });
+        },
+
+        step: function(dt) {
+            if (Q.inputs['player2-up']) this.p.y -= 20;
+            if (Q.inputs['player2-down']) this.p.y += 20;
         }
     });
 
     Q.Sprite.extend("Ball", {
         init: function(p) {
             this._super(p, {
-                asset: "Ball.png"
+                asset: "Ball.png",
+                speed: 200,
+                vx: 0,
+                vy: 0,
+                collisionMask: Q.SPRITE_DEFAULT
             });
-            this.add("aiBounce");
+
+            this.on("hit", this, "collide");
+            this.p.vx = this.p.speed;
+            //this.p.vy = this.p.speed;
+        },
+
+        step: function(dt) {
+            this.p.x += this.p.vx * dt;
+            this.p.y += this.p.vy * dt;
+
+            this.stage.collide(this);
+
+            if(this.p.y < 24) { 
+                this.p.vy = Math.abs(this.p.vy); 
+            }
+            if(this.p.y > Q.height - 24) { 
+                this.p.vy = -Math.abs(this.p.vy); 
+            }
+            
+            // if(this.p.x > Q.width - 24) { 
+            //     this.p.vx = -Math.abs(this.p.vx); 
+            // }
+
+            // if(this.p.x < 24) { 
+            //     this.p.vx = Math.abs(this.p.vx); 
+            // }
+
+            if (this.p.x < 50) {
+                Q.state.inc("player2_score", 1);
+                this.destroy();
+                Q.stageScene("court");
+            }
+            if (this.p.x > Q.width - 50) {
+                Q.state.inc("player1_score", 1);
+                this.destroy();
+                Q.stageScene("court");
+            }
+        },
+
+        collide: function(col) {
+            if (col.obj.isA("Player1")) {
+                var dy = (this.p.y - col.obj.p.y) / col.obj.p.h * 2.5;
+                if (col.normalX >= 0) {
+                    this.p.vx = this.p.speed;
+                    this.p.speed += 10;
+                }
+                this.p.vy = dy * this.p.speed;
+            } 
+
+            if (col.obj.isA("Player2")) {
+                var dy = (this.p.y - col.obj.p.y) / col.obj.p.h * 2.5;
+                if (col.normalX <= 0) {
+                    this.p.vx = -this.p.speed;
+                    this.p.speed += 10;
+                }
+                this.p.vy = dy * this.p.speed;
+            } 
+
+            this.p.x -= col.separate[0];
+            this.p.y -= col.separate[1];
         }
     });
-      
+    
+
+    ////////////////////////////////////////////////////////////
+    // Scenes + UI
+
     Q.scene("court", function(stage) {
-        var player1 = stage.insert(new Q.Player({
+        Q.state.reset({
+            player1_score: 0,
+            player2_score: 0
+        });
+
+        Q.stageScene("hud", 1);
+
+        var player1 = stage.insert(new Q.Player1({
             x: 100,
-            y: Q.height/2
+            y: Q.height/2,
         }));
-        var player2 = stage.insert(new Q.Player({
+        var player2 = stage.insert(new Q.Player2({
             x: Q.width - 100,
             y: Q.height/2,
-            flip: 'x'
         }));
-        
+
         var ball = stage.insert(new Q.Ball({
             x: Q.width/2,
             y: Q.height/2
         }));
     });
 
+    Q.scene("hud", function(stage) {
+    
+        stage.insert(new Q.Score1({
+            label: "Player 1 score: 0",
+            x: Q.width / 5,
+            y: 20,
+        }));
+        stage.insert(new Q.Score2({
+            label: "Player 2 score: 0",
+            x: 4 * Q.width / 5,
+            y: 20,
+        }));
+
+        if (Q.state.get("player1_score") == 3 || Q.state.get("player2_score") == 3) {
+            Q.stageScene("endGame");
+        }
+    });
+    
+    Q.scene("title", function(stage) {
+        Q.clearStage(1);
+        
+        stage.insert(new Q.UI.Text({
+            label: "Pong",
+            align: "center",
+            x: Q.width/2,
+            y: Q.height/3,
+            size: 30
+        }));
+        
+        stage.insert(new Q.UI.Text({
+            label: "Start game",
+            align: "center",
+            x: Q.width / 2,
+            y: Q.height / 2,
+            size: 20,
+        }));
+
+    });
+
     Q.scene("endGame", function(stage) {
+        stage.insert(new Q.UI.Text({
+            label: "You win!",
+            align: 'center',
+            x: Q.width/2,
+            y: Q.height/2,
+            size: 20
+        }));
+
         var container = stage.insert(new Q.UI.Container({
             x: Q.width/2,
             y: Q.height/2,
@@ -55,15 +203,44 @@ window.addEventListener("load", function() {
             fill: "#CCCCCC",
             label: "Play Again?"
         }));
-
-        button.on("click", function() {
-            Q.clearStages();
-            Q.stageScene("court");
-        });
-
         container.fit(20);
     });
 
+    Q.UI.Text.extend("Score1", {
+        init: function(p) {
+            this._super(p, {
+                align: "center",
+                weight: "normal",
+                size: 18
+          });
+    
+            Q.state.on("change.player1_score", this, "score");
+        },
+    
+        score: function(score) {
+            this.p.label = "Player 1 score: " + Q.state.get("player1_score");
+            
+        }
+    });
+
+    Q.UI.Text.extend("Score2", {
+        init: function(p) {
+            this._super(p, {
+                align: "center",
+                weight: "normal",
+                size: 18
+          });
+    
+            Q.state.on("change.player2_score", this, "score");
+        },
+    
+        score: function(score) {
+            this.p.label = "Player 2 score: " + Q.state.get("player2_score");
+        }
+    });
+
+
+    ////////////////////////////////////////////////////////////
 
     Q.load("Stick.png, Ball.png", function() {
         Q.stageScene("court");
