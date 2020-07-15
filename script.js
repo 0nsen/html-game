@@ -1,7 +1,7 @@
 
 window.addEventListener("load", function() {
     var Q = Quintus()
-            .include("Sprites, Scenes, Input, 2D, UI, Touch")
+            .include("Sprites, Scenes, Input, UI, Touch")
             .setup("game")
             .touch();
     
@@ -225,46 +225,52 @@ window.addEventListener("load", function() {
         }));
     });
 
-    Q.scene("player1-win", function(stage) {
-        stage.insert(new Q.UI.Text({
-            label: "Player 1 wins!",
-            align: 'center',
-            x: Q.width/2,
-            y: Q.height/3,
-            size: 50
-        }));
+    var playagainButton = new Q.UI.Button({
+        x: Q.width/2,
+        y: Q.height/2,
+        border: 1,
+        fill: "white",
+        label: "Play Again?"
+    }, function() {
+        Q.stageScene("court");
+        Q.stageScene("hud", 1);
+    });
 
-        var button = stage.insert(new Q.UI.Button({
-            x: Q.width/2,
-            y: Q.height/2,
-            border: 1,
-            fill: "white",
-            label: "Play Again?"
-        }, function() {
-            Q.stageScene("court");
-            Q.stageScene("hud", 1);
-        }));
+    function playerWin(name) {
+        if (name == "player1") {
+            var winner = new Q.UI.Text({
+                label: "Player 1 wins!",
+                align: "center",
+                x: Q.width/2,
+                y: Q.height/3,
+                size: 50
+            });
+            return winner;
+        }
+        else if (name == "player2") {
+            var winner = new Q.UI.Text({
+                label: "Player 2 wins",
+                align: "center",
+                x: Q.width/2,
+                y: Q.height/3,
+                size: 50
+            });
+            return winner;
+        }
+    };
+
+    Q.scene("player1-win", function(stage) {
+        var victoryText = playerWin("player1");
+        stage.insert(victoryText);
+
+        stage.insert(playagainButton);
     });
 
     Q.scene("player2-win", function(stage) {
-        stage.insert(new Q.UI.Text({
-            label: "Player 2 wins!",
-            align: 'center',
-            x: Q.width/2,
-            y: Q.height/3,
-            size: 50
-        }));
+        var victoryText = playerWin("player2");
+        stage.insert(victoryText);
 
-        var button = stage.insert(new Q.UI.Button({
-            x: Q.width/2,
-            y: Q.height/2,
-            border: 1,
-            fill: "white",
-            label: "Play Again?"
-        }, function() {
-            Q.stageScene("court");
-            Q.stageScene("hud", 1);
-        }));
+        stage.insert(playagainButton);
     });
 
     Q.UI.Text.extend("Score1", {
